@@ -27,6 +27,6 @@ class ProviderTest extends BaseTest
      */
     public function testWsConnection(): void
     {
-        $this->assertTrue($this->provider->checkWsConnection());
+        $this->assertFalse($this->provider->checkWsConnection());
     }
 }

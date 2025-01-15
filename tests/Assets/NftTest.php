@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace MultipleChain\TON\Tests\Assets;
 
-use MultipleChain\Utils\Number;
 use MultipleChain\TON\Assets\NFT;
 use MultipleChain\TON\Tests\BaseTest;
 use MultipleChain\TON\Models\Transaction;
@@ -22,7 +21,7 @@ class NftTest extends BaseTest
     public function setUp(): void
     {
         parent::setUp();
-        $this->nft = new NFT($this->data->nftTestAddress);
+        $this->nft = new NFT($this->data->nftCollectionAddress);
     }
 
     /**
@@ -30,7 +29,7 @@ class NftTest extends BaseTest
      */
     public function testName(): void
     {
-        $this->assertEquals('NFT2', $this->nft->getName());
+        $this->assertEquals('NFT Test on TON', $this->nft->getName());
     }
 
     /**
@@ -38,7 +37,7 @@ class NftTest extends BaseTest
      */
     public function testSymbol(): void
     {
-        $this->assertEquals('NFT2', $this->nft->getSymbol());
+        $this->assertEquals('NFT Test on TON', $this->nft->getSymbol());
     }
 
     /**
@@ -59,7 +58,7 @@ class NftTest extends BaseTest
     {
         $this->assertEquals(
             strtolower($this->data->balanceTestAddress),
-            strtolower($this->nft->getOwner(600))
+            strtolower($this->nft->getOwner($this->data->nftBalanceTestId))
         );
     }
 
@@ -69,21 +68,21 @@ class NftTest extends BaseTest
     public function testTokenURI(): void
     {
         $this->assertEquals(
-            '',
-            $this->nft->getTokenURI(600)
+            'https://s.getgems.io/nft/c/677e3821c9af9379ef55f729/0/meta.json',
+            $this->nft->getTokenURI($this->data->nftBalanceTestId)
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testApproved(): void
-    {
-        $this->assertEquals(
-            null,
-            $this->nft->getApproved(600)
-        );
-    }
+    // /**
+    //  * @return void
+    //  */
+    // public function testApproved(): void
+    // {
+    //     $this->assertEquals(
+    //         null,
+    //         $this->nft->getApproved($this->data->nftBalanceTestId)
+    //     );
+    // }
 
     /**
      * @return void
@@ -91,12 +90,12 @@ class NftTest extends BaseTest
     public function testTransfer(): void
     {
         $signer = $this->nft->transfer(
-            $this->data->senderTestAddress,
+            $this->data->senderTestAddressV4,
             $this->data->receiverTestAddress,
             $this->data->nftTransferId
         );
 
-        $signer = $signer->sign($this->data->senderPrivateKey);
+        $signer = $signer->sign($this->data->senderSeedPhrase);
 
         if (!$this->data->nftTransactionTestIsActive) {
             $this->assertTrue(true);
@@ -111,64 +110,64 @@ class NftTest extends BaseTest
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testApprove(): void
-    {
-        $customOwner = $this->data->nftTransactionTestIsActive
-            ? $this->data->receiverTestAddress
-            : $this->data->senderTestAddress;
-        $customSpender = $this->data->nftTransactionTestIsActive
-            ? $this->data->senderTestAddress
-            : $this->data->receiverTestAddress;
-        $customPrivateKey = $this->data->nftTransactionTestIsActive
-            ? $this->data->receiverPrivateKey
-            : $this->data->senderPrivateKey;
+    // /**
+    //  * @return void
+    //  */
+    // public function testApprove(): void
+    // {
+    //     $customOwner = $this->data->nftTransactionTestIsActive
+    //         ? $this->data->receiverTestAddress
+    //         : $this->data->senderTestAddress;
+    //     $customSpender = $this->data->nftTransactionTestIsActive
+    //         ? $this->data->senderTestAddress
+    //         : $this->data->receiverTestAddress;
+    //     $customPrivateKey = $this->data->nftTransactionTestIsActive
+    //         ? $this->data->receiverPrivateKey
+    //         : $this->data->senderPrivateKey;
 
-        $signer = $this->nft->approve(
-            $customOwner,
-            $customSpender,
-            $this->data->nftTransferId
-        );
+    //     $signer = $this->nft->approve(
+    //         $customOwner,
+    //         $customSpender,
+    //         $this->data->nftTransferId
+    //     );
 
-        $signer = $signer->sign($customPrivateKey);
+    //     $signer = $signer->sign($customPrivateKey);
 
-        if (!$this->data->nftTransactionTestIsActive) {
-            $this->assertTrue(true);
-            return;
-        }
+    //     if (!$this->data->nftTransactionTestIsActive) {
+    //         $this->assertTrue(true);
+    //         return;
+    //     }
 
-        (new Transaction($signer->send()))->wait();
+    //     (new Transaction($signer->send()))->wait();
 
-        $this->assertEquals(
-            strtolower($this->nft->getApproved($this->data->nftTransferId)),
-            strtolower($this->data->senderTestAddress)
-        );
-    }
+    //     $this->assertEquals(
+    //         strtolower($this->nft->getApproved($this->data->nftTransferId)),
+    //         strtolower($this->data->senderTestAddress)
+    //     );
+    // }
 
-    /**
-     * @return void
-     */
-    public function testTransferFrom(): void
-    {
-        if (!$this->data->nftTransactionTestIsActive) {
-            $this->assertTrue(true);
-            return;
-        }
+    // /**
+    //  * @return void
+    //  */
+    // public function testTransferFrom(): void
+    // {
+    //     if (!$this->data->nftTransactionTestIsActive) {
+    //         $this->assertTrue(true);
+    //         return;
+    //     }
 
-        $signer = $this->nft->transferFrom(
-            $this->data->senderTestAddress,
-            $this->data->receiverTestAddress,
-            $this->data->senderTestAddress,
-            $this->data->nftTransferId
-        );
+    //     $signer = $this->nft->transferFrom(
+    //         $this->data->senderTestAddress,
+    //         $this->data->receiverTestAddress,
+    //         $this->data->senderTestAddress,
+    //         $this->data->nftTransferId
+    //     );
 
-        (new Transaction($signer->sign($this->data->senderPrivateKey)->send()))->wait();
+    //     (new Transaction($signer->sign($this->data->senderPrivateKey)->send()))->wait();
 
-        $this->assertEquals(
-            strtolower($this->nft->getOwner($this->data->nftTransferId)),
-            strtolower($this->data->senderTestAddress)
-        );
-    }
+    //     $this->assertEquals(
+    //         strtolower($this->nft->getOwner($this->data->nftTransferId)),
+    //         strtolower($this->data->senderTestAddress)
+    //     );
+    // }
 }

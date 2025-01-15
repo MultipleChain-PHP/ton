@@ -13,6 +13,8 @@ class ContractTransaction extends Transaction implements ContractTransactionInte
      */
     public function getAddress(): string
     {
-        return '0x';
+        $data = $this->getData();
+        $source = $data?->action->details->asset ?? '';
+        return Address::parse($source)->toStringContract($this->provider->isTestnet());
     }
 }

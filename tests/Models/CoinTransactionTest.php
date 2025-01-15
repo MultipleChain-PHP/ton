@@ -33,7 +33,7 @@ class CoinTransactionTest extends BaseTest
     {
         $this->assertEquals(
             strtolower($this->tx->getReceiver()),
-            strtolower($this->data->modelTestReceiver)
+            strtolower($this->data->receiverTestAddress)
         );
     }
 
@@ -44,7 +44,7 @@ class CoinTransactionTest extends BaseTest
     {
         $this->assertEquals(
             strtolower($this->tx->getSender()),
-            strtolower($this->data->modelTestSender)
+            strtolower($this->data->senderTestAddress)
         );
     }
 
@@ -78,7 +78,7 @@ class CoinTransactionTest extends BaseTest
         $this->assertEquals(
             $this->tx->verifyTransfer(
                 AssetDirection::INCOMING,
-                $this->data->modelTestReceiver,
+                $this->data->receiverTestAddress,
                 $this->data->coinAmount
             ),
             TransactionStatus::CONFIRMED
@@ -87,7 +87,7 @@ class CoinTransactionTest extends BaseTest
         $this->assertEquals(
             $this->tx->verifyTransfer(
                 AssetDirection::OUTGOING,
-                $this->data->modelTestSender,
+                $this->data->senderTestAddress,
                 $this->data->coinAmount
             ),
             TransactionStatus::CONFIRMED
@@ -96,7 +96,7 @@ class CoinTransactionTest extends BaseTest
         $this->assertEquals(
             $this->tx->verifyTransfer(
                 AssetDirection::INCOMING,
-                $this->data->modelTestSender,
+                $this->data->senderTestAddress,
                 $this->data->coinAmount
             ),
             TransactionStatus::FAILED

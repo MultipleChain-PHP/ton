@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace MultipleChain\TON\Models;
 
+use MultipleChain\TON\Address;
+use MultipleChain\Utils\Math;
+use Olifanton\Interop\Units;
 use MultipleChain\Utils\Number;
 use MultipleChain\TON\Assets\Token;
 use MultipleChain\Enums\AssetDirection;
@@ -15,9 +18,21 @@ class TokenTransaction extends ContractTransaction implements TokenTransactionIn
     /**
      * @return string
      */
+    public function getAddress(): string
+    {
+        $data = $this->getData();
+        $source = $data?->action->details->asset ?? '';
+        return Address::parse($source)->toStringContract($this->provider->isTestnet());
+    }
+
+    /**
+     * @return string
+     */
     public function getReceiver(): string
     {
-        return '0x';
+        $data = $this->getData();
+        $source = $data?->action->details->receiver ?? '';
+        return Address::parse($source)->toStringWallet($this->provider->isTestnet());
     }
 
     /**
@@ -25,7 +40,29 @@ class TokenTransaction extends ContractTransaction implements TokenTransactionIn
      */
     public function getSender(): string
     {
-        return '0x';
+        $data = $this->getData();
+        $source = $data?->action->details->sender ?? '';
+        return Address::parse($source)->toStringWallet($this->provider->isTestnet());
+    }
+
+    /**
+     * @return string
+     */
+    public function getReceiverJettonAddress(): string
+    {
+        $data = $this->getData();
+        $source = $data?->action->details->receiver_jetton_wallet ?? '';
+        return Address::parse($source)->toStringContract($this->provider->isTestnet());
+    }
+
+    /**
+     * @return string
+     */
+    public function getSenderJettonAddress(): string
+    {
+        $data = $this->getData();
+        $source = $data?->action->details->sender_jetton_wallet ?? '';
+        return Address::parse($source)->toStringContract($this->provider->isTestnet());
     }
 
     /**
@@ -33,7 +70,10 @@ class TokenTransaction extends ContractTransaction implements TokenTransactionIn
      */
     public function getAmount(): Number
     {
-        return new Number('0', (new Token($this->getAddress()))->getDecimals());
+        $data = $this->getData();
+        $amount = $data?->action->details->amount ?? 0;
+        $decimals = (new Token($this->getAddress()))->getDecimals();
+        return new Number(Units::fromNano($amount, $decimals)->toFloat(), $decimals);
     }
 
     /**
@@ -44,6 +84,26 @@ class TokenTransaction extends ContractTransaction implements TokenTransactionIn
      */
     public function verifyTransfer(AssetDirection $direction, string $address, float $amount): TransactionStatus
     {
-        return TransactionStatus::PENDING;
+        $status = $this->getStatus();
+
+        if (TransactionStatus::PENDING === $status) {
+            return TransactionStatus::PENDING;
+        }
+
+        if ($this->getAmount()->toFloat() !== $amount) {
+            return TransactionStatus::FAILED;
+        }
+
+        if (AssetDirection::INCOMING === $direction) {
+            if (strtolower($this->getReceiver()) !== strtolower($address)) {
+                return TransactionStatus::FAILED;
+            }
+        } else {
+            if (strtolower($this->getSender()) !== strtolower($address)) {
+                return TransactionStatus::FAILED;
+            }
+        }
+
+        return TransactionStatus::CONFIRMED;
     }
 }

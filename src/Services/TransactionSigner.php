@@ -4,26 +4,43 @@ declare(strict_types=1);
 
 namespace MultipleChain\TON\Services;
 
+use Olifanton\Interop\Bytes;
+use Olifanton\Interop\KeyPair;
+use Olifanton\Interop\Boc\Cell;
 use MultipleChain\TON\Provider;
+use Olifanton\Mnemonic\TonMnemonic;
+use Olifanton\Ton\Contracts\Wallets\Transfer;
 use MultipleChain\Interfaces\ProviderInterface;
+use Olifanton\Ton\Contracts\Wallets\AbstractWallet;
+use Olifanton\Ton\Contracts\Wallets\TransferOptions;
 use MultipleChain\Interfaces\Services\TransactionSignerInterface;
 
 class TransactionSigner implements TransactionSignerInterface
 {
     /**
-     * @var mixed
+     * @var Transfer
      */
-    private mixed $rawData;
+    private Transfer $rawData;
 
     /**
-     * @var mixed
+     * @var Cell
      */
-    private mixed $signedData;
+    private Cell $signedData;
 
     /**
      * @var Provider
      */
     private Provider $provider;
+
+    /**
+     * @var AbstractWallet
+     */
+    private AbstractWallet $wallet;
+
+    /**
+     * @var KeyPair
+     */
+    private KeyPair $keyPair;
 
     /**
      * @param mixed $rawData
@@ -42,9 +59,17 @@ class TransactionSigner implements TransactionSignerInterface
      */
     public function sign(string $privateKey): TransactionSignerInterface
     {
-        // example implementation
-        $this->provider->isTestnet(); // just for phpstan
-        $this->signedData = 'signedData';
+        $this->keyPair = TonMnemonic::mnemonicToKeyPair(explode(' ', $privateKey));
+        $this->wallet = $this->provider->createWalletV4($this->keyPair->publicKey);
+
+        $message = $this->wallet->createTransferMessage([
+            $this->rawData
+        ], new TransferOptions(
+            seqno: (int) $this->wallet->seqno($this->provider->transport),
+        ));
+
+        $this->signedData = $message->sign($this->keyPair->secretKey);
+
         return $this;
     }
 
@@ -53,12 +78,13 @@ class TransactionSigner implements TransactionSignerInterface
      */
     public function send(): string
     {
-        // example implementation
-        return 'transactionId';
+        $this->provider->transport->send($this->signedData->toBoc(false));
+        $messageHash = Bytes::bytesToHexString($this->signedData->hash());
+        return $this->provider->findTxHashByMessageHash($messageHash);
     }
 
     /**
-     * @return mixed
+     * @return Transfer
      */
     public function getRawData(): mixed
     {
@@ -66,7 +92,7 @@ class TransactionSigner implements TransactionSignerInterface
     }
 
     /**
-     * @return mixed
+     * @return Cell
      */
     public function getSignedData(): mixed
     {

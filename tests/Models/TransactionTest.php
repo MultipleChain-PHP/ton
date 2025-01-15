@@ -63,7 +63,7 @@ class TransactionTest extends BaseTest
     public function testUrl(): void
     {
         $this->assertEquals(
-            'ton url',
+            'https://testnet.tonscan.org/tx/6f97ca02d8f20151210ca2bef32340804214e4f74eebf6a9edf13b727ac2527e',
             $this->tx->getUrl()
         );
     }
@@ -73,7 +73,7 @@ class TransactionTest extends BaseTest
      */
     public function testSender(): void
     {
-        $this->assertEquals(strtolower($this->data->modelTestSender), strtolower($this->tx->getSigner()));
+        $this->assertEquals(strtolower($this->data->senderTestAddress), strtolower($this->tx->getSigner()));
     }
 
     /**
@@ -81,7 +81,7 @@ class TransactionTest extends BaseTest
      */
     public function testFee(): void
     {
-        $this->assertEquals(0.000371822357865, $this->tx->getFee()->toFloat());
+        $this->assertEquals(0.002830538, $this->tx->getFee()->toFloat());
     }
 
     /**
@@ -89,7 +89,15 @@ class TransactionTest extends BaseTest
      */
     public function testBlockNumber(): void
     {
-        $this->assertEquals(5461884, $this->tx->getBlockNumber());
+        $this->assertEquals(28607062, $this->tx->getBlockNumber());
+    }
+
+    /**
+     * @return void
+     */
+    public function getBlockId(): void
+    {
+        $this->assertEquals('0:6000000000000000:28607062', $this->tx->getBlockId());
     }
 
     /**
@@ -97,7 +105,7 @@ class TransactionTest extends BaseTest
      */
     public function testBlockTimestamp(): void
     {
-        $this->assertEquals(1710141144, $this->tx->getBlockTimestamp());
+        $this->assertEquals(1736323418, $this->tx->getBlockTimestamp());
     }
 
     /**
@@ -105,7 +113,7 @@ class TransactionTest extends BaseTest
      */
     public function testBlockConfirmationCount(): void
     {
-        $this->assertGreaterThan(129954, $this->tx->getBlockConfirmationCount());
+        $this->assertGreaterThan(77696, $this->tx->getBlockConfirmationCount());
     }
 
     /**

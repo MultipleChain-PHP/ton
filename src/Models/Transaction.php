@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace MultipleChain\TON\Models;
 
+use Olifanton\Interop\Units;
+use MultipleChain\TON\Address;
 use MultipleChain\Utils\Number;
 use MultipleChain\TON\Provider;
+use MultipleChain\Enums\ErrorType;
 use MultipleChain\TON\Assets\Coin;
 use MultipleChain\Enums\TransactionType;
 use MultipleChain\Enums\TransactionStatus;
@@ -22,12 +25,12 @@ class Transaction implements TransactionInterface
     /**
      * @var mixed
      */
-    private mixed $data;
+    private mixed $data = null;
 
     /**
      * @var Provider
      */
-    private Provider $provider;
+    protected Provider $provider;
 
     /**
      * @param string $id
@@ -52,9 +55,35 @@ class Transaction implements TransactionInterface
      */
     public function getData(): mixed
     {
-        $this->provider->isTestnet(); // just for phpstan
-        $this->data = 'data'; // example implementation
-        return $this->data;
+        try {
+            if (null !== $this->data) {
+                return $this->data;
+            }
+
+            $res = $this->provider->client->get('transactions', ['hash' => $this->id]);
+
+            if (null === $res) {
+                return null;
+            }
+
+            $transaction = $res->transactions[0] ?? null;
+
+            if (null === $transaction) {
+                return null;
+            }
+
+            $action = $this->provider->client->get('actions', [
+                'trace_id' => [$transaction->trace_id]
+            ])->actions[0] ?? null;
+
+            if (null === $action) {
+                return null;
+            }
+
+            return $this->data = (object) ['transaction' => $transaction, 'action' => $action];
+        } catch (\Throwable $th) {
+            throw new \RuntimeException(ErrorType::RPC_REQUEST_ERROR->value);
+        }
     }
 
     /**
@@ -63,7 +92,18 @@ class Transaction implements TransactionInterface
      */
     public function wait(?int $ms = 4000): TransactionStatus
     {
-        return TransactionStatus::PENDING;
+        try {
+            $status = $this->getStatus();
+            if (TransactionStatus::PENDING != $status) {
+                return $status;
+            }
+
+            sleep($ms / 1000);
+
+            return $this->wait($ms);
+        } catch (\Throwable $th) {
+            return TransactionStatus::FAILED;
+        }
     }
 
     /**
@@ -71,7 +111,27 @@ class Transaction implements TransactionInterface
      */
     public function getType(): TransactionType
     {
-        return TransactionType::GENERAL;
+        $data = $this->getData();
+
+        if (null === $data) {
+            return TransactionType::GENERAL;
+        }
+
+        $type = $data->action->type;
+
+        if ('ton_transfer' === $type) {
+            return TransactionType::COIN;
+        }
+
+        if ('jetton_transfer' === $type) {
+            return TransactionType::TOKEN;
+        }
+
+        if ('nft_transfer' === $type) {
+            return TransactionType::NFT;
+        }
+
+        return TransactionType::CONTRACT;
     }
 
     /**
@@ -79,7 +139,15 @@ class Transaction implements TransactionInterface
      */
     public function getUrl(): string
     {
-        return 'https://example.com';
+        return $this->provider->explorerUrl . $this->id;
+    }
+
+    /**
+     * @return string
+     */
+    public function getComment(): string
+    {
+        return $this->getData()?->action->details->comment ?? '';
     }
 
     /**
@@ -87,7 +155,9 @@ class Transaction implements TransactionInterface
      */
     public function getSigner(): string
     {
-        return '0x';
+        $data = $this->getData();
+        $account = $data?->transaction->account;
+        return Address::parse($account)->toStringWallet($this->provider->isTestnet());
     }
 
     /**
@@ -95,7 +165,9 @@ class Transaction implements TransactionInterface
      */
     public function getFee(): Number
     {
-        return new Number('0', (new Coin())->getDecimals());
+        $data = $this->getData();
+        $fee = Units::fromNano($data?->transaction->total_fees ?? 0);
+        return new Number($fee->toFloat(), (new Coin())->getDecimals());
     }
 
     /**
@@ -103,7 +175,33 @@ class Transaction implements TransactionInterface
      */
     public function getBlockNumber(): int
     {
-        return 0;
+        return $this->getData()?->transaction->block_ref->seqno ?? 0;
+    }
+
+    /**
+     * @return int
+     */
+    public function getWorkchain(): int
+    {
+        return $this->getData()?->transaction->block_ref->workchain ?? 0;
+    }
+
+    /**
+     * @return string
+     */
+    public function getShard(): string
+    {
+        return $this->getData()?->transaction->block_ref->shard ?? '';
+    }
+
+    /**
+     * @return string
+     */
+    public function getBlockId(): string
+    {
+        $data = $this->getData();
+        $ref = $data?->transaction->block_ref;
+        return "{$ref->workchain}:{$ref->shard}:{$ref->seqno}";
     }
 
     /**
@@ -111,7 +209,7 @@ class Transaction implements TransactionInterface
      */
     public function getBlockTimestamp(): int
     {
-        return 0;
+        return $this->getData()?->transaction->now ?? 0;
     }
 
     /**
@@ -119,7 +217,12 @@ class Transaction implements TransactionInterface
      */
     public function getBlockConfirmationCount(): int
     {
-        return 0;
+        $blockNumber = $this->getBlockNumber();
+        $blocks = $this->provider->client->get('blocks', [
+            'workchain' => (string) $this->provider->network->getWorkchain(),
+            'sort' => 'desc'
+        ])->blocks;
+        return $blocks[0]->seqno - $blockNumber;
     }
 
     /**
@@ -127,6 +230,12 @@ class Transaction implements TransactionInterface
      */
     public function getStatus(): TransactionStatus
     {
+        $data = $this->getData();
+        if ($data?->transaction->prev_trans_hash) {
+            return $data->action->success
+                ? TransactionStatus::CONFIRMED
+                : TransactionStatus::FAILED;
+        }
         return TransactionStatus::PENDING;
     }
 }

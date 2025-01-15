@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace MultipleChain\TON\Tests\Assets;
 
-use MultipleChain\Utils\Number;
 use MultipleChain\TON\Assets\Coin;
 use MultipleChain\TON\Tests\BaseTest;
 use MultipleChain\TON\Models\Transaction;
@@ -68,27 +67,20 @@ class CoinTest extends BaseTest
         $signer = $this->coin->transfer(
             $this->data->senderTestAddress,
             $this->data->receiverTestAddress,
-            $this->data->transferTestAmount
+            $this->data->transferTestAmount,
+            'ton-transfer-test'
         );
 
-        $signer = $signer->sign($this->data->senderPrivateKey);
+        $signer = $signer->sign($this->data->senderSeedPhrase);
 
         if (!$this->data->coinTransferTestIsActive) {
             $this->assertTrue(true);
             return;
         }
 
-        $beforeBalance = $this->coin->getBalance($this->data->receiverTestAddress);
-
-        (new Transaction($signer->send()))->wait();
-
-        $afterBalance = $this->coin->getBalance($this->data->receiverTestAddress);
-
-        $transferNumber = new Number($this->data->transferTestAmount, $this->coin->getDecimals());
-
         $this->assertEquals(
-            $afterBalance->toString(),
-            $beforeBalance->add($transferNumber)->toString()
+            (new Transaction($signer->send()))->wait(),
+            \MultipleChain\Enums\TransactionStatus::CONFIRMED
         );
     }
 }

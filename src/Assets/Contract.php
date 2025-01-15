@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace MultipleChain\TON\Assets;
 
 use MultipleChain\TON\Provider;
+use Olifanton\Interop\Boc\Cell;
+use Olifanton\Interop\Boc\Builder;
 use MultipleChain\Interfaces\ProviderInterface;
 use MultipleChain\Interfaces\Assets\ContractInterface;
 
@@ -23,7 +25,7 @@ class Contract implements ContractInterface
     /**
      * @var Provider
      */
-    private Provider $provider;
+    protected Provider $provider;
 
     /**
      * @param string $address
@@ -50,8 +52,7 @@ class Contract implements ContractInterface
      */
     public function callMethod(string $method, mixed ...$args): mixed
     {
-        $this->provider->isTestnet(); // just for phpstan
-        return 'example';
+        throw new \Exception('Method not implemented.');
     }
 
     /**
@@ -75,7 +76,7 @@ class Contract implements ContractInterface
      */
     public function getMethodData(string $method, mixed ...$args): mixed
     {
-        return 'example';
+        throw new \Exception('Method not implemented.');
     }
 
     /**
@@ -86,6 +87,29 @@ class Contract implements ContractInterface
      */
     public function createTransactionData(string $method, string $from, mixed ...$args): mixed
     {
-        return 'example';
+        throw new \Exception('Method not implemented.');
+    }
+
+    /**
+     * @param Builder $cell
+     * @param string $receiver
+     * @param string $sender
+     * @param string|null $body
+     * @return Cell
+     */
+    public function endCell(Builder $cell, string $receiver, string $sender, string $body = null): Cell
+    {
+        $cell->storeAddress(Address::parse($receiver))
+            ->storeAddress(Address::parse($sender))
+            ->storeBit(0)
+            ->storeCoins(1);
+
+        if ($body) {
+            $cell->storeBit(1)->storeRef((new Builder())->storeUint(0, 32)->storeStringTail($body)->endCell());
+        } else {
+            $cell->storeBit(0);
+        }
+
+        return $cell->endCell();
     }
 }

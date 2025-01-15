@@ -27,7 +27,8 @@ class BaseTest extends TestCase
         $this->data = json_decode(file_get_contents(__DIR__ . '/data.json'));
 
         $this->provider = new Provider([
-            'testnet' => true
+            'testnet' => true,
+            'apiKey' => $this->data->apiKey,
         ]);
     }
 
