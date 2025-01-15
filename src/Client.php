@@ -4,10 +4,21 @@ declare(strict_types=1);
 
 namespace MultipleChain\TON;
 
+/**
+ * @method mixed get(string $url, array<mixed> $data = [])
+ * @method mixed post(string $url, array<mixed> $data = [])
+ * @method mixed put(string $url, array<mixed> $data = [])
+ * @method mixed delete(string $url, array<mixed> $data = [])
+ * @method mixed head(string $url, array<mixed> $data = [])
+ * @method mixed connect(string $url, array<mixed> $data = [])
+ * @method mixed options(string $url, array<mixed> $data = [])
+ * @method mixed trace(string $url, array<mixed> $data = [])
+ * @method mixed patch(string $url, array<mixed> $data = [])
+ */
 final class Client
 {
     /**
-     * @var boolean
+     * @var string
      */
     private string $mainnetApi = 'https://toncenter.com/api/v3/';
 
@@ -282,6 +293,10 @@ final class Client
 
         // Init
         $curl = curl_init($url);
+
+        if (false === $curl) {
+            throw new \RuntimeException('Failed to initialize cURL');
+        }
 
         // Set options
         curl_setopt_array($curl, $this->options);

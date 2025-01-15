@@ -286,7 +286,7 @@ class Provider implements ProviderInterface
 
     /**
      * @param Uint8Array $publicKey
-     * @return WalletV3R1
+     * @return WalletV4R2
      */
     public function createWalletV4(Uint8Array $publicKey): WalletV4R2
     {
@@ -295,7 +295,7 @@ class Provider implements ProviderInterface
 
     /**
      * @param Uint8Array $publicKey
-     * @return WalletV3R1
+     * @return WalletV5Beta
      */
     public function createWalletV5Beta(Uint8Array $publicKey): WalletV5Beta
     {

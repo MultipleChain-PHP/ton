@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace MultipleChain\TON\Assets;
 
 use MultipleChain\TON\Provider;
-use Olifanton\Interop\Boc\Cell;
-use Olifanton\Interop\Boc\Builder;
 use MultipleChain\Interfaces\ProviderInterface;
 use MultipleChain\Interfaces\Assets\ContractInterface;
 
@@ -88,28 +86,5 @@ class Contract implements ContractInterface
     public function createTransactionData(string $method, string $from, mixed ...$args): mixed
     {
         throw new \Exception('Method not implemented.');
-    }
-
-    /**
-     * @param Builder $cell
-     * @param string $receiver
-     * @param string $sender
-     * @param string|null $body
-     * @return Cell
-     */
-    public function endCell(Builder $cell, string $receiver, string $sender, string $body = null): Cell
-    {
-        $cell->storeAddress(Address::parse($receiver))
-            ->storeAddress(Address::parse($sender))
-            ->storeBit(0)
-            ->storeCoins(1);
-
-        if ($body) {
-            $cell->storeBit(1)->storeRef((new Builder())->storeUint(0, 32)->storeStringTail($body)->endCell());
-        } else {
-            $cell->storeBit(0);
-        }
-
-        return $cell->endCell();
     }
 }

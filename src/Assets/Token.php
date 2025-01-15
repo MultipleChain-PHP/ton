@@ -22,22 +22,25 @@ use Olifanton\Ton\Contracts\Jetton\TransferJettonOptions;
 class Token extends Contract implements TokenInterface
 {
     /**
-     * @var object|null
+     * @var array<mixed>|null
      */
-    private ?object $metadata = null;
+    private ?array $metadata = null;
 
     /**
-     * @return object
+     * @return array<mixed>
      */
-    public function getMetadata(): object
+    public function getMetadata(): array
     {
         if ($this->metadata) {
             return $this->metadata;
         }
 
+        /**
+         * @var object{jetton_content: object} $master
+         */
         $master = $this->getJettonMaster();
 
-        return ($this->metadata = $master->jetton_content);
+        return ($this->metadata = (array) $master->jetton_content);
     }
 
     /**
@@ -56,7 +59,7 @@ class Token extends Contract implements TokenInterface
      */
     public function getName(): string
     {
-        return $this->getMetadata()->name;
+        return $this->getMetadata()['name'];
     }
 
     /**
@@ -64,7 +67,7 @@ class Token extends Contract implements TokenInterface
      */
     public function getSymbol(): string
     {
-        return $this->getMetadata()->symbol;
+        return $this->getMetadata()['symbol'];
     }
 
     /**
@@ -72,7 +75,7 @@ class Token extends Contract implements TokenInterface
      */
     public function getDecimals(): int
     {
-        return (int) $this->getMetadata()->decimals;
+        return (int) $this->getMetadata()['decimals'];
     }
 
     /**
@@ -97,7 +100,7 @@ class Token extends Contract implements TokenInterface
     {
         $decimals = $this->getDecimals();
         $master = $this->getJettonMaster();
-        $totalSupply = $master->total_supply;
+        $totalSupply = $master?->total_supply ?? 0;
         return new Number(Units::fromNano($totalSupply, $decimals)->toFloat(), $decimals);
     }
 
@@ -122,7 +125,13 @@ class Token extends Contract implements TokenInterface
             new Address($this->getAddress()),
         );
 
-        return new Address($root->getJettonWalletAddress($this->provider->transport, new Address($owner)));
+        $addr = $root->getJettonWalletAddress($this->provider->transport, new Address($owner));
+
+        if (!$addr) {
+            return null;
+        }
+
+        return new Address($addr);
     }
 
     /**
@@ -160,6 +169,10 @@ class Token extends Contract implements TokenInterface
         $jettonWallet = new JettonWallet(new JettonWalletOptions(
             address: $senderJettonAddress,
         ));
+
+        if (!$senderJettonAddress) {
+            throw new \RuntimeException('Your Jetton Wallet is not found.');
+        }
 
         $state = $this->provider->transport->getState($senderJettonAddress);
 

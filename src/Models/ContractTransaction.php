@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace MultipleChain\TON\Models;
 
+use MultipleChain\TON\Address;
 use MultipleChain\Interfaces\Models\ContractTransactionInterface;
 
 class ContractTransaction extends Transaction implements ContractTransactionInterface

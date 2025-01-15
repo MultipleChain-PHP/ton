@@ -1,6 +1,6 @@
 {
     "name": "multiplechain/ton",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "MultipleChain TON",
     "type": "library",
     "license": "MIT",

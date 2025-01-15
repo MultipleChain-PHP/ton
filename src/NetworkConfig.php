@@ -37,7 +37,7 @@ class NetworkConfig extends BaseNetworkConfig
             throw new \RuntimeException('API key is required');
         }
 
-        $this->apiKey = $network['apiKey'] ?? null;
+        $this->apiKey = $network['apiKey'];
         $this->testnet = $network['testnet'] ?? false;
         $this->workchain = $network['workchain'] ?? 0;
 

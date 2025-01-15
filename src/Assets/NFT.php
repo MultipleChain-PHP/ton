@@ -19,14 +19,14 @@ use Olifanton\Ton\Contracts\Nft\NftTransferOptions;
 class NFT extends Contract implements NftInterface
 {
     /**
-     * @var object|null
+     * @var array<mixed>|null
      */
-    private ?object $metadata = null;
+    private ?array $metadata = null;
 
     /**
-     * @return object
+     * @return array<mixed>
      */
-    public function getMetadata(): object
+    public function getMetadata(): array
     {
         if ($this->metadata) {
             return $this->metadata;
@@ -38,9 +38,9 @@ class NFT extends Contract implements NftInterface
 
         $collectionUri = $result->nft_collections[0]->collection_content->uri;
 
-        $data = json_decode(file_get_contents($collectionUri));
+        $data = json_decode(file_get_contents($collectionUri) ?: '');
 
-        return ($this->metadata = (object) [
+        return ($this->metadata = [
             'name' => $data->name,
             'image' => $data->image,
             'description' => $data->description
@@ -49,16 +49,16 @@ class NFT extends Contract implements NftInterface
 
     /**
      * @param int|string $tokenId
-     * @return object
+     * @return array<mixed>
      */
-    public function getNftItem(int|string $tokenId): object
+    public function getNftItem(int|string $tokenId): array
     {
         $result = $this->provider->client->get('nft/items', [
             'collection_address' => $this->getAddress(),
             'address' => [(string) $tokenId]
         ]);
 
-        return $result->nft_items[0];
+        return (array) $result->nft_items[0];
     }
 
     /**
@@ -66,7 +66,7 @@ class NFT extends Contract implements NftInterface
      */
     public function getName(): string
     {
-        return $this->getMetadata()->name;
+        return $this->getMetadata()['name'];
     }
 
     /**
@@ -74,7 +74,7 @@ class NFT extends Contract implements NftInterface
      */
     public function getSymbol(): string
     {
-        return $this->getMetadata()->description;
+        return $this->getMetadata()['description'];
     }
 
     /**
@@ -97,7 +97,9 @@ class NFT extends Contract implements NftInterface
      */
     public function getOwner(int|string $tokenId): string
     {
-        return Address::parse($this->getNftItem($tokenId)->owner_address)->toStringWallet($this->provider->isTestnet());
+        return Address::parse(
+            $this->getNftItem($tokenId)['owner_address']
+        )->toStringWallet($this->provider->isTestnet());
     }
 
     /**
@@ -106,7 +108,7 @@ class NFT extends Contract implements NftInterface
      */
     public function getTokenURI(int|string $tokenId): string
     {
-        return $this->getNftItem($tokenId)->content->uri;
+        return $this->getNftItem($tokenId)['content']->uri;
     }
 
     /**
